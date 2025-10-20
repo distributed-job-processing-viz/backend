@@ -1,0 +1,66 @@
+# Name of the workflow that appears in GitHub Actions UI
+name: Backend Continuous Integration
+
+# Define when this workflow should run
+on:
+  # Trigger on pushes to the main branch
+  push:
+    branches: [main]
+  # Trigger on pull requests targeting the main branch
+  # This ensures code is tested BEFORE merging
+  pull_request:
+    branches: [main]
+
+# A workflow can have multiple "jobs" that run in parallel or sequence
+jobs:
+  # Job name: "build" (you can name it anything)
+  build:
+    # The OS where this job runs (GitHub provides free Ubuntu runners)
+    # Options: ubuntu-latest, windows-latest, macos-latest
+    runs-on: ubuntu-latest
+
+    # Steps are executed sequentially within a job
+    steps:
+      # STEP 1: Download your repository code
+      # actions/checkout@v3 is a pre-built action from GitHub
+      # Without this, the runner would be empty - no code to work with!
+      # It clones your repository so subsequent steps can access your files
+      - uses: actions/checkout@v3
+
+      # STEP 2: Install Java Development Kit (JDK)
+      # Your project needs Java 21 to compile and run
+      - name: Setup on JDK 21
+        uses: actions/setup-java@v3
+        with:
+          # java-version: Must match <java.version> in your pom.xml (line 30)
+          java-version: 21
+          # distribution: Which JDK vendor to use
+          # 'temurin' = Eclipse Temurin (formerly AdoptOpenJDK) - a free, open-source JDK
+          # Other options: 'zulu', 'adopt', 'liberica'
+          # Temurin is recommended by most of the community
+          distribution: 'temurin'
+          # cache: Speed up builds by caching Maven dependencies
+          # First run: downloads all dependencies (~2-3 min)
+          # Subsequent runs: reuses cached dependencies (~30 sec)
+          cache: maven
+
+      # STEP 3: Run tests with coverage
+      # 'mvn clean test' does:
+      # 1. 'clean' - deletes old build files (target/ directory)
+      # 2. 'test' - compiles code and runs all JUnit tests
+      # 3. JaCoCo automatically generates coverage report (configured in pom.xml)
+      # If any test fails, this step fails and the workflow stops
+      - name: Run tests with coverage
+        run: mvn clean test
+
+      # STEP 4: Upload coverage report as artifact
+      # Artifacts = files saved from the workflow run
+      # You can download these from the GitHub Actions UI
+      # Useful for: viewing coverage reports, debugging test failures, etc.
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          # Name that appears in GitHub Actions UI
+          name: coverage-report
+          # Path to the files to upload (JaCoCo HTML report)
+          path: target/site/jacoco/
