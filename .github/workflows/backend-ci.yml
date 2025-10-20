@@ -22,15 +22,15 @@ jobs:
     # Steps are executed sequentially within a job
     steps:
       # STEP 1: Download your repository code
-      # actions/checkout@v3 is a pre-built action from GitHub
+      # actions/checkout@v4 is a pre-built action from GitHub
       # Without this, the runner would be empty - no code to work with!
       # It clones your repository so subsequent steps can access your files
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # STEP 2: Install Java Development Kit (JDK)
       # Your project needs Java 21 to compile and run
       - name: Setup on JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           # java-version: Must match <java.version> in your pom.xml (line 30)
           java-version: 21
@@ -58,7 +58,7 @@ jobs:
       # You can download these from the GitHub Actions UI
       # Useful for: viewing coverage reports, debugging test failures, etc.
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           # Name that appears in GitHub Actions UI
           name: coverage-report
