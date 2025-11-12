@@ -1,7 +1,9 @@
 package dev.jjcoll.distributedtaskviz.dto;
 
+import dev.jjcoll.distributedtaskviz.model.Complexity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Data Transfer Object (DTO) for task submission requests.
@@ -12,11 +14,23 @@ import jakarta.validation.constraints.NotBlank;
 @Schema(description = "Request object for submitting a new task")
 public record TaskSubmissionRequestDTO(
         /**
-         * The name or description of the task to be created.
-         * This field is required and cannot be blank.
          * The @NotBlank annotation ensures validation at the API level.
          */
         @Schema(description = "Name/description of the task to create", example = "Process user data", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotBlank(message = "Task name is required and cannot be blank")
-        String name
+        String name,
+
+        /**
+         * when using enum as type, validation is handled automatically
+         * 400 - returned if invalid value is sent
+         */
+        @Schema(description = "Complexity of the task, implicitly related to time task takes to complete", example = "HIGH")
+        @NotNull(message = "Complexity is required and cannot be null")
+        Complexity complexity
+
+
+
+
+
+
 ) {}

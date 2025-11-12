@@ -47,7 +47,7 @@ public interface TaskMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
-    @Mapping(target = "status", constant = "PENDING")
+    @Mapping(target = "status", expression = "java(dev.jjcoll.distributedtaskviz.model.TaskStatus.PENDING)")
     @Mapping(target = "completedAt", ignore = true)
     Task toEntity(TaskSubmissionRequestDTO request);
 }

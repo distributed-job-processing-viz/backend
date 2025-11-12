@@ -3,6 +3,7 @@ package dev.jjcoll.distributedtaskviz;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.jjcoll.distributedtaskviz.dto.TaskSubmissionRequestDTO;
+import dev.jjcoll.distributedtaskviz.model.Complexity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,7 +32,7 @@ public class TaskControllerTest {
     @Test
     void testSubmitTask() throws Exception {
         // Arrange: Create the DTO
-        TaskSubmissionRequestDTO newTask = new TaskSubmissionRequestDTO("new task");
+        TaskSubmissionRequestDTO newTask = new TaskSubmissionRequestDTO("new task", Complexity.HIGH);
 
         // Act & Assert: Perform the request and verify the response
         mockMvc.perform(post("/api/tasks")
@@ -49,7 +50,7 @@ public class TaskControllerTest {
     @Test
     void testGetTaskSuccess() throws Exception {
         // First, create a task to retrieve later
-        TaskSubmissionRequestDTO newTask = new TaskSubmissionRequestDTO("task to retrieve");
+        TaskSubmissionRequestDTO newTask = new TaskSubmissionRequestDTO("task to retrieve", Complexity.LOW);
 
         String responseJson = mockMvc.perform(post("/api/tasks")
                         .contentType(MediaType.APPLICATION_JSON)

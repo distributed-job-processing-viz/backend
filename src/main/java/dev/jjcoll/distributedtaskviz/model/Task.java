@@ -38,20 +38,21 @@ public class Task {
 
     /**
      * Current status of the task (e.g., "PENDING", "RUNNING", "COMPLETED", "FAILED").
+     * Make sure to use EumType. STRING to store the actual value of the enum to the database
+     * else we store the ordinal value of the enum, and if we reorder or add values in the middle
+     * data becomes corrupted
      */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private TaskStatus status;
 
-    /**
-     * Timestamp when the task was created.
-     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Complexity complexity;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * Timestamp when the task was completed.
-     * Can be null if the task hasn't completed yet.
-     */
     @Column(nullable = true)
     private LocalDateTime completedAt;
 }
