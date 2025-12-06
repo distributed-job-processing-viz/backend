@@ -26,10 +26,15 @@ public interface TaskMapper {
      * - Task.status -> TaskResponse.status
      * - Task.createdAt -> TaskResponse.createdAt
      * - Task.completedAt -> TaskResponse.completedAt
+     * - Task.assignedWorker.id -> TaskResponse.assignedWorkerId
+     * - Task.assignedWorker.name -> TaskResponse.assignedWorkerName
+     * - Task.processingStartedAt -> TaskResponse.processingStartedAt
      *
      * @param task The Task entity from the database
      * @return TaskResponse DTO for the API response
      */
+    @Mapping(source = "assignedWorker.id", target = "assignedWorkerId")
+    @Mapping(source = "assignedWorker.name", target = "assignedWorkerName")
     TaskResponseDTO toDto(Task task);
 
     /**
@@ -49,5 +54,7 @@ public interface TaskMapper {
     @Mapping(target = "createdAt", expression = "java(java.time.LocalDateTime.now())")
     @Mapping(target = "status", expression = "java(dev.jjcoll.distributedtaskviz.model.TaskStatus.PENDING)")
     @Mapping(target = "completedAt", ignore = true)
+    @Mapping(target = "assignedWorker", ignore = true)
+    @Mapping(target = "processingStartedAt", ignore = true)
     Task toEntity(TaskSubmissionRequestDTO request);
 }

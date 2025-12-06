@@ -31,5 +31,14 @@ public record TaskResponseDTO(
         LocalDateTime createdAt,
 
         @Schema(description = "Timestamp when the task was completed (null if not completed)", example = "2025-10-08T14:35:00", nullable = true)
-        LocalDateTime completedAt
+        LocalDateTime completedAt,
+
+        @Schema(description = "ID of the worker assigned to process this task (null if not assigned)", example = "1", nullable = true)
+        Long assignedWorkerId,
+
+        @Schema(description = "Name of the worker assigned to process this task (null if not assigned)", example = "worker-1", nullable = true)
+        String assignedWorkerName,
+
+        @Schema(description = "Timestamp when processing started (null if not started)", example = "2025-10-08T14:30:30", nullable = true)
+        LocalDateTime processingStartedAt
 ) {}

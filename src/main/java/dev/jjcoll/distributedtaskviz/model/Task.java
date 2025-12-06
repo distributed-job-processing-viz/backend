@@ -55,4 +55,20 @@ public class Task {
 
     @Column(nullable = true)
     private LocalDateTime completedAt;
+
+    /**
+     * Worker assigned to process this task (nullable until claimed by a worker).
+     * Many tasks can be assigned to one worker.
+     * FetchType.LAZY avoids loading worker data unless explicitly needed.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_worker_id", nullable = true)
+    private Worker assignedWorker;
+
+    /**
+     * Timestamp when processing started (when task status changed to PROCESSING).
+     * Useful for monitoring task processing duration.
+     */
+    @Column(nullable = true)
+    private LocalDateTime processingStartedAt;
 }

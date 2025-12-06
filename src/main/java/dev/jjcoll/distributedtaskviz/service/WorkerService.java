@@ -6,8 +6,12 @@ import dev.jjcoll.distributedtaskviz.mappers.WorkerMapper;
 import dev.jjcoll.distributedtaskviz.model.Worker;
 import dev.jjcoll.distributedtaskviz.model.WorkerStatus;
 import dev.jjcoll.distributedtaskviz.repository.WorkerRepository;
+import dev.jjcoll.distributedtaskviz.simulation.WorkerSimulationManager;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,15 +19,19 @@ import java.util.Optional;
 public class WorkerService {
     private final WorkerRepository workerRepository;
     private final WorkerMapper workerMapper;
+    private final WorkerSimulationManager simulationManager;
     private static final String WORKER_NAME_PREFIX = "worker-";
 
-    public WorkerService(WorkerRepository workerRepository, WorkerMapper workerMapper) {
+    public WorkerService(WorkerRepository workerRepository, WorkerMapper workerMapper,
+                         @Lazy WorkerSimulationManager simulationManager) {
         this.workerRepository = workerRepository;
         this.workerMapper = workerMapper;
+        this.simulationManager = simulationManager;
     }
 
     /**
      * Creates a new worker with auto-generated name if not provided.
+     * Also starts the worker simulation thread.
      *
      * @param request the worker creation request
      * @return the created worker as a DTO
@@ -37,6 +45,10 @@ public class WorkerService {
         }
 
         Worker savedWorker = workerRepository.save(worker);
+
+        // Start the worker simulation
+        simulationManager.startWorker(savedWorker);
+
         return workerMapper.toDto(savedWorker);
     }
 
@@ -63,7 +75,7 @@ public class WorkerService {
     }
 
     /**
-     * Stops a worker by setting its status to STOPPED.
+     * Stops a worker by setting its status to STOPPED and shutting down its thread.
      *
      * @param id the worker ID
      * @return an Optional containing the updated worker DTO if found
@@ -75,10 +87,45 @@ public class WorkerService {
             Worker worker = workerOpt.get();
             worker.setStatus(WorkerStatus.STOPPED);
             Worker savedWorker = workerRepository.save(worker);
+
+            // Stop the worker simulation thread
+            simulationManager.stopWorker(id);
+
             return Optional.of(workerMapper.toDto(savedWorker));
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Updates worker's heartbeat timestamp.
+     * Called periodically by SimulatedWorker.
+     *
+     * @param workerId the worker ID
+     */
+    @Transactional
+    public void updateHeartbeat(Long workerId) {
+        Worker worker = workerRepository.findById(workerId)
+                .orElseThrow(() -> new RuntimeException("Worker not found: " + workerId));
+
+        worker.setLastHeartbeat(LocalDateTime.now());
+        workerRepository.save(worker);
+    }
+
+    /**
+     * Updates worker status.
+     * Used by SimulatedWorker to update status (IDLE/PROCESSING).
+     *
+     * @param workerId the worker ID
+     * @param status the new status
+     */
+    @Transactional
+    public void updateWorkerStatus(Long workerId, WorkerStatus status) {
+        Worker worker = workerRepository.findById(workerId)
+                .orElseThrow(() -> new RuntimeException("Worker not found: " + workerId));
+
+        worker.setStatus(status);
+        workerRepository.save(worker);
     }
 
     /**
