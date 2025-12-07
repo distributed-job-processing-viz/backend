@@ -10,6 +10,7 @@ import dev.jjcoll.distributedtaskviz.service.TaskService;
 import dev.jjcoll.distributedtaskviz.service.WorkerService;
 import dev.jjcoll.distributedtaskviz.simulation.WorkerSimulationManager;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,19 +49,33 @@ class WorkerSimulationIntegrationTest {
 
     private List<Long> createdWorkerIds = new ArrayList<>();
 
+    @BeforeEach
+    void setUp() {
+        // Ensure engine is running before each test
+        // This prevents the race condition where workers get queued instead of started
+        if (simulationManager.getEngineState() != EngineState.RUNNING) {
+            simulationManager.startEngine();
+        }
+    }
+
     @AfterEach
     void cleanup() {
-        // Stop all workers created during test
+        // Stop engine first to ensure all workers are properly terminated
+        if (simulationManager.getEngineState() != EngineState.STOPPED) {
+            simulationManager.stopEngine();
+        }
+
+        // Then clean up individual workers from tracking list
         createdWorkerIds.forEach(workerId -> {
             try {
                 workerService.stopWorker(workerId);
             } catch (Exception e) {
-                // Ignore cleanup errors
+                // Ignore cleanup errors - worker may already be stopped
             }
         });
         createdWorkerIds.clear();
 
-        // Clean up all tasks and workers from database
+        // Finally, clean up all tasks and workers from database
         taskRepository.deleteAll();
         workerRepository.deleteAll();
     }

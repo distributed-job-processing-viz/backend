@@ -19,6 +19,10 @@ public class CorsConfig {
      * - Frontend: http://localhost:5173 (Vite default port)
      * - Backend: http://localhost:8080 (Spring Boot default port)
      *
+     * Production setup:
+     * - Frontend: https://dist-viz.vercel.app
+     * - Backend: https://backend-production-002c.up.railway.app
+     *
      * @return WebMvcConfigurer with CORS configuration
      */
     @Bean
@@ -27,7 +31,11 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:5173", "http://localhost:5174")  // Frontend origin
+                        .allowedOrigins(
+                                "http://localhost:5173",
+                                "http://localhost:5174",
+                                "https://dist-viz.vercel.app"
+                        )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
