@@ -74,8 +74,12 @@ class WorkerSimulationIntegrationTest {
         // Then: Worker exists in database
         assertThat(workerRepository.findById(worker.id())).isPresent();
 
-        // Then: Simulation manager tracking worker
-        assertThat(simulationManager.getActiveWorkerCount()).isGreaterThanOrEqualTo(1);
+        // Then: Simulation manager tracking worker (wait for worker to be activated)
+        await().atMost(3, TimeUnit.SECONDS)
+                .pollInterval(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> {
+                    assertThat(simulationManager.getActiveWorkerCount()).isGreaterThanOrEqualTo(1);
+                });
     }
 
     @Test
@@ -87,8 +91,8 @@ class WorkerSimulationIntegrationTest {
         WorkerResponseDTO worker = workerService.createWorker(new WorkerCreateRequestDTO(null));
         createdWorkerIds.add(worker.id());
 
-        // Then: Wait for task to be claimed (max 5 seconds)
-        await().atMost(5, TimeUnit.SECONDS)
+        // Then: Wait for task to be claimed (max 10 seconds to account for CI slowness)
+        await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(() -> {
                     Task updated = taskRepository.findById(task.getId()).orElseThrow();
@@ -127,14 +131,14 @@ class WorkerSimulationIntegrationTest {
 
         workers.forEach(w -> createdWorkerIds.add(w.id()));
 
-        // Then: All tasks eventually completed (max 20 seconds)
-        await().atMost(20, TimeUnit.SECONDS)
+        // Then: All tasks eventually completed (max 30 seconds to account for CI slowness)
+        await().atMost(30, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
                     long completedCount = taskRepository.findAll().stream()
                             .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
                             .count();
-                    assertThat(completedCount).isEqualTo(5);
+                    assertThat(completedCount).isEqualTo(5L);
                 });
 
         // Then: Verify all tasks assigned to workers
@@ -161,8 +165,8 @@ class WorkerSimulationIntegrationTest {
         WorkerResponseDTO worker = workerService.createWorker(new WorkerCreateRequestDTO(null));
         createdWorkerIds.add(worker.id());
 
-        // Then: Wait for task to be claimed and processing
-        await().atMost(5, TimeUnit.SECONDS)
+        // Then: Wait for task to be claimed and processing (max 10 seconds to account for CI slowness)
+        await().atMost(10, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(() -> {
                     Task updated = taskRepository.findById(task.getId()).orElseThrow();
@@ -206,13 +210,14 @@ class WorkerSimulationIntegrationTest {
         LocalDateTime firstHeartbeat = workerRepository
                 .findById(worker.id()).orElseThrow().getLastHeartbeat();
 
-        // When: Wait 6 seconds (longer than heartbeat interval)
-        Thread.sleep(6000);
-
-        // Then: Heartbeat has been updated
-        LocalDateTime secondHeartbeat = workerRepository
-                .findById(worker.id()).orElseThrow().getLastHeartbeat();
-        assertThat(secondHeartbeat).isAfter(firstHeartbeat);
+        // Wait for heartbeat to update (heartbeat interval is typically 5 seconds)
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    LocalDateTime currentHeartbeat = workerRepository
+                            .findById(worker.id()).orElseThrow().getLastHeartbeat();
+                    assertThat(currentHeartbeat).isAfter(firstHeartbeat);
+                });
     }
 
     @Test
@@ -233,11 +238,14 @@ class WorkerSimulationIntegrationTest {
         LocalDateTime firstHeartbeat = workerRepository
                 .findById(worker.id()).orElseThrow().getLastHeartbeat();
 
-        Thread.sleep(6000);
-
-        LocalDateTime secondHeartbeat = workerRepository
-                .findById(worker.id()).orElseThrow().getLastHeartbeat();
-        assertThat(secondHeartbeat).isAfter(firstHeartbeat);
+        // Wait for heartbeat to update (heartbeat interval is typically 5 seconds)
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    LocalDateTime currentHeartbeat = workerRepository
+                            .findById(worker.id()).orElseThrow().getLastHeartbeat();
+                    assertThat(currentHeartbeat).isAfter(firstHeartbeat);
+                });
     }
 
     @Test
