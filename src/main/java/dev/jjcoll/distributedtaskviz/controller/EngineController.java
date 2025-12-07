@@ -57,14 +57,26 @@ public class EngineController {
             );
         }
 
-        int pendingCount = simulationManager.getPendingWorkerCount();
-        simulationManager.startEngine();
+        int activatedCount = simulationManager.startEngine();
+        int activeWorkerCount = simulationManager.getActiveWorkerCount();
+
+        String message;
+        if (activatedCount > 0) {
+            // Cold start: workers were pending and got activated
+            message = String.format("Engine started successfully. Activated %d workers", activatedCount);
+        } else if (activeWorkerCount > 0) {
+            // Resume: engine was paused, workers already active
+            message = String.format("Engine resumed successfully. %d workers active", activeWorkerCount);
+        } else {
+            // Edge case: no workers at all
+            message = "Engine started successfully. No workers available";
+        }
 
         return ResponseEntity.ok(
             new EngineStatusResponse(
                 EngineState.RUNNING,
-                String.format("Engine started successfully. Activated %d workers", pendingCount),
-                simulationManager.getActiveWorkerCount()
+                message,
+                activeWorkerCount
             )
         );
     }

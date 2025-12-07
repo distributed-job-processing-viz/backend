@@ -40,8 +40,8 @@ class WorkerSimulationManagerTest {
 
     @BeforeEach
     void setUp() {
-        // Create manager with test configuration (auto-start = false for manual control tests)
-        manager = new WorkerSimulationManager(taskService, workerService, 2, 5, 10, false);
+        // Create manager with test configuration (max 10 workers, auto-start = false for manual control tests)
+        manager = new WorkerSimulationManager(taskService, workerService, 10, false);
     }
 
     @Test
@@ -162,7 +162,7 @@ class WorkerSimulationManagerTest {
     void testEngineInitialization_AutoStartTrue_EngineRunningInitially() {
         // Given: Manager created with autoStart=true
         WorkerSimulationManager autoStartManager = new WorkerSimulationManager(
-            taskService, workerService, 2, 5, 10, true
+            taskService, workerService, 10, true
         );
 
         // Then: Engine state is RUNNING

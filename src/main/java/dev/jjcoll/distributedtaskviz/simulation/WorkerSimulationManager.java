@@ -41,26 +41,11 @@ public class WorkerSimulationManager {
     // List to track workers waiting for engine to start
     private final List<Worker> pendingWorkers = new CopyOnWriteArrayList<>();
 
-    // Thread pool configuration from application.properties
-    @Value("${worker.simulation.thread-pool.core-size:5}")
-    private int corePoolSize;
-
-    @Value("${worker.simulation.thread-pool.max-size:10}")
-    private int maxPoolSize;
-
-    @Value("${worker.simulation.thread-pool.queue-capacity:100}")
-    private int queueCapacity;
-
     public WorkerSimulationManager(TaskService taskService, WorkerService workerService,
-                                   @Value("${worker.simulation.thread-pool.core-size:5}") int corePoolSize,
-                                   @Value("${worker.simulation.thread-pool.max-size:10}") int maxPoolSize,
-                                   @Value("${worker.simulation.thread-pool.queue-capacity:100}") int queueCapacity,
+                                   @Value("${worker.simulation.max-workers:100}") int maxWorkers,
                                    @Value("${worker.simulation.auto-start:false}") boolean autoStart) {
         this.taskService = taskService;
         this.workerService = workerService;
-        this.corePoolSize = corePoolSize;
-        this.maxPoolSize = maxPoolSize;
-        this.queueCapacity = queueCapacity;
 
         // Set initial engine state based on configuration
         if (autoStart) {
@@ -71,12 +56,12 @@ public class WorkerSimulationManager {
             logger.info("Engine started in STOPPED state (manual control enabled)");
         }
 
-        // Create thread pool with bounded queue
+        // Create fixed thread pool - one thread per worker, no queue
         this.executorService = new ThreadPoolExecutor(
-                corePoolSize,
-                maxPoolSize,
+                maxWorkers,  // core pool size = max workers
+                maxWorkers,  // max pool size = max workers (fixed size)
                 60L, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(queueCapacity),
+                new SynchronousQueue<>(),  // No queue - workers start immediately or reject
                 new ThreadFactory() {
                     private int counter = 0;
                     @Override
@@ -87,11 +72,10 @@ public class WorkerSimulationManager {
                         return thread;
                     }
                 },
-                new ThreadPoolExecutor.CallerRunsPolicy() // Backpressure policy
+                new ThreadPoolExecutor.AbortPolicy() // Reject if max workers exceeded
         );
 
-        logger.info("WorkerSimulationManager initialized with pool size: core={}, max={}, queue={}",
-                corePoolSize, maxPoolSize, queueCapacity);
+        logger.info("WorkerSimulationManager initialized with max workers: {}", maxWorkers);
     }
 
     /**
@@ -200,11 +184,12 @@ public class WorkerSimulationManager {
     /**
      * Starts the processing engine. All pending workers are activated
      * and begin processing tasks.
+     * @return the number of workers that were activated
      */
-    public synchronized void startEngine() {
+    public synchronized int startEngine() {
         if (engineState == EngineState.RUNNING) {
             logger.warn("Engine is already running");
-            return;
+            return 0;
         }
 
         logger.info("Starting processing engine...");
@@ -217,6 +202,7 @@ public class WorkerSimulationManager {
         workersToStart.forEach(this::startWorkerInternal);
 
         logger.info("Engine started. Activated {} workers", workersToStart.size());
+        return workersToStart.size();
     }
 
     /**
